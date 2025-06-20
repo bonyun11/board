@@ -2,12 +2,19 @@ package com.bonyun.board.domain.board.service;
 
 
 import com.bonyun.board.domain.board.dto.BoardDto;
+import com.bonyun.board.domain.board.dto.BoardPageResponseDto;
 import com.bonyun.board.domain.board.dto.BoardResponseDto;
 import com.bonyun.board.domain.board.entity.Board;
+import com.bonyun.board.domain.board.entity.Like;
 import com.bonyun.board.domain.board.repository.BoardRepository;
+import com.bonyun.board.domain.board.repository.LikeRepository;
 import com.bonyun.board.domain.user.entity.User;
 import com.bonyun.board.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,6 +25,7 @@ import java.util.List;
 public class BoardService {
     private final BoardRepository boardRepository;
     private final UserRepository userRepository;
+    private final LikeRepository likeRepository;
 
     //게시글 생성
     public BoardResponseDto createPost(BoardDto boardDto) {
@@ -29,15 +37,28 @@ public class BoardService {
     }
 
     //전체 게시글 조회
-    public List<BoardResponseDto> getPosts(){
-        return boardRepository.findAllByOrderByModifiedAtDesc().stream().map(BoardResponseDto::new).toList();
+    @Transactional(readOnly = true)
+    public BoardPageResponseDto getPosts(int page, int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("modifiedAt").descending());
+        Page<Board> boardPage = boardRepository.findAll(pageable);
+        return new BoardPageResponseDto(
+                boardPage.getContent().stream().map(BoardResponseDto::new).toList(),
+                boardPage.getTotalPages(),
+                boardPage.getNumber(),
+                boardPage.getSize(),
+                boardPage.getTotalElements()
+        );
     }
 
     //하나씩 조회
+    @Transactional
     public BoardResponseDto getPost(Long id) {
-        return boardRepository.findById(id).map(BoardResponseDto::new).orElseThrow(
+        Board board = boardRepository.findById(id).orElseThrow(
                 () -> new IllegalArgumentException("아이디가 존재하지 않습니다.")
         );
+        board.increaseViewCount(); // 조회수 증가
+        boardRepository.save(board); // 변경사항 저장
+        return new BoardResponseDto(board);
     }
 
     //게시글 수정
@@ -68,5 +89,52 @@ public class BoardService {
         return new BoardResponseDto(board);
     }
 
+    // 좋아요 추가
+    @Transactional
+    public BoardResponseDto addLike(Long boardId, String username) {
+        Board board = boardRepository.findById(boardId)
+                .orElseThrow(() -> new IllegalArgumentException("게시글 ID가 존재하지 않습니다."));
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+
+        // 중복 좋아요 체크
+        likeRepository.findByBoardAndUser(board, user)
+                .ifPresent(like -> { throw new IllegalStateException("이미 좋아요를 눌렀습니다."); });
+
+        // 좋아요 추가
+        Like like = Like.builder()
+                .board(board)
+                .user(user)
+                .build();
+        likeRepository.save(like);
+
+        // 게시글 좋아요 수 증가
+        board.incrementLikeCount();
+        boardRepository.save(board);
+
+        return new BoardResponseDto(board);
+    }
+
+    // 좋아요 취소
+    @Transactional
+    public BoardResponseDto removeLike(Long boardId, String username) {
+        Board board = boardRepository.findById(boardId)
+                .orElseThrow(() -> new IllegalArgumentException("게시글 ID가 존재하지 않습니다."));
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+
+        // 좋아요 존재 여부 체크
+        Like like = likeRepository.findByBoardAndUser(board, user)
+                .orElseThrow(() -> new IllegalStateException("좋아요를 누르지 않았습니다."));
+
+        // 좋아요 삭제
+        likeRepository.delete(like);
+
+        // 게시글 좋아요 수 감소
+        board.decreaseLikeCount();
+        boardRepository.save(board);
+
+        return new BoardResponseDto(board);
+    }
 
 }

@@ -10,15 +10,15 @@ import lombok.NoArgsConstructor;
 public class BoardDto {
     private String user;
     private String title;
-    private String content;
     private String password;
+    private String content;
 
     public Board toEntity(User user){
         return Board.builder()
                 .user(user)
                 .title(this.title)
-                .content(this.content)
                 .password(this.password)
+                .content(this.content)
                 .build();
     }
 

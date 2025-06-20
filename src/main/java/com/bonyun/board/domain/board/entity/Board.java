@@ -37,6 +37,14 @@ public class Board {
     @Column(name = "success")
     private boolean success;
 
+    @Column(name = "view_count", nullable = false)
+    @Builder.Default
+    private Long viewCount = 0L; // 조회수 필드 추가, 기본값 0
+
+    @Column(name = "like_count", nullable = false)
+    @Builder.Default
+    private Long likeCount = 0L; // 좋아요 필드 추가, 기본값 0
+
     @CreatedDate
     @Column
     private LocalDateTime createdAt;
@@ -52,6 +60,8 @@ public class Board {
         this.password =  boardDto.getPassword();
         this.createdAt = LocalDateTime.now();
         this.modifiedAt = LocalDateTime.now();
+        this.viewCount = 0L;
+        this.likeCount = 0L;
     }
 
 
@@ -59,4 +69,19 @@ public class Board {
         this.title = boardDto.getTitle(); // BoardDto에 title 필드가 있다고 가정
         this.content = boardDto.getContent(); // BoardDto에 content 필드가 있다고 가정
     }
+
+    public void increaseViewCount() {
+        this.viewCount++; // 조회수 증가
+    }
+
+    public void incrementLikeCount() {
+        this.likeCount++; // 좋아요 증가
+    }
+
+    public void decreaseLikeCount() {
+        if (this.likeCount > 0) { // 좋아요 감소
+            this.likeCount--;
+        }
+    }
+
 }

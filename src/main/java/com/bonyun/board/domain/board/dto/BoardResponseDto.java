@@ -12,12 +12,16 @@ public class BoardResponseDto {
     private User user;
     private String title;
     private String content;
+    private Long viewCount; // 조회수 필드 추가
+    private Long likeCount; // 좋아요 필드 추가
 
     public BoardResponseDto(Board board){
         this.id = board.getId();
         this.user = board.getUser();
         this.title = board.getTitle();
         this.content = board.getContent();
+        this.viewCount = board.getViewCount(); // 조회수 설정
+        this.likeCount = board.getLikeCount(); // 좋아요 설정
     }
 
 }

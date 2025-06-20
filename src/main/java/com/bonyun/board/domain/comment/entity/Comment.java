@@ -35,8 +35,9 @@ public class Comment {
     @JoinColumn(name = "parent_id")
     private Comment parentComment; // 대댓글의 부모 댓글
 
+    @Builder.Default
     @OneToMany(mappedBy = "parentComment", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Comment> reply = new ArrayList<>(); // 대댓글 목록
+    private List<Comment> replies = new ArrayList<>(); // 대댓글 목록
 
     @Column(name = "content", nullable = false)
     private String content;

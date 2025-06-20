@@ -16,7 +16,7 @@ public class CommentResponseDto {
     private User user;
     private String content;
     private Long parentCommentId;
-    private List<CommentResponseDto> reply = new ArrayList<>();
+    private List<CommentResponseDto> replies = new ArrayList<>();
     private LocalDateTime createdAt;
     private LocalDateTime modifiedAt;
 
@@ -27,7 +27,7 @@ public class CommentResponseDto {
         this.parentCommentId = comment.getParentComment() != null ? comment.getParentComment().getId() : null;
         this.createdAt = comment.getCreatedAt();
         this.modifiedAt = comment.getModifiedAt();
-        this.reply = comment.getReply().stream()
+        this.replies = comment.getReplies().stream()
                 .map(CommentResponseDto::new)
                 .toList();
     }
